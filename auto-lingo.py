@@ -1,15 +1,16 @@
+import contextlib
 import sys,os,time,json,argparse,random
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.edge.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.action_chains import ActionChains
 
-from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.edge.service import Service as EdgeService
 
 
 def set_chrome_options(chrome_options):
@@ -132,7 +133,7 @@ def log_in(login, password):
         login_button.click()
 
     try:
-        wait = WebDriverWait(driver, 25)
+        wait = WebDriverWait(driver, 40)
         wait.until(lambda driver: driver.current_url ==
                    "https://www.duolingo.com/learn")
 
@@ -144,7 +145,7 @@ def log_in(login, password):
 # this function is dedicated to all imbecils who put "Correct solution:" inside the solution itself
 
 def anti_imbecil_check(solution):
-    return len(solution) > 17 and solution[0:17] == "Correct solution:"
+    return len(solution) > 17 and solution[:17] == "Correct solution:"
 
 def task_tokens(tokens):
 
@@ -165,19 +166,16 @@ def task_tokens(tokens):
             # check if we found a pair
             classes = tokens[i].get_attribute('class')
             if '_3alTu' in classes:
-                done_list.append(i)
-                done_list.append(j)
+                done_list.extend((i, j))
                 break
 
 def task_options(options):
     for option in options:
-        try:
+        with contextlib.suppress(WebDriverException):
             if(option.get_attribute('data-test')=='challenge-tap-token'):
                 challenge_match()
             else:
                 option.click()
-        except WebDriverException:
-            pass
 
 def challenge_select():
     sentence = driver.find_element(By.XPATH,
@@ -371,11 +369,7 @@ def challenge_tap_complete():
     # print("---> challenge_tap_complete")
     sentence_words = driver.find_elements(By.XPATH,
                                           '//span[@data-test="hint-sentence"]')
-    sentence = ""
-    for word in sentence_words:
-        sentence += word.text
-
-    sentence += " (c)"
+    sentence = "".join(word.text for word in sentence_words) + " (c)"
     if sentence in dictionary:
         tap_tokens = driver.find_elements(By.XPATH,
                                           '//button[@data-test="challenge-tap-token"]')
@@ -497,10 +491,7 @@ def challenge_match():
         for token2 in tap_tokens:
             token.click()
             time.sleep(.5) # Click slower
-            if token2 in invalid_tokens or token2.get_attribute("aria-disabled") != None or token.get_attribute("disabled") != None:
-                # This one has been tried, move on to the next instance of the loop
-                continue
-            else:
+            if token2 not in invalid_tokens and token2.get_attribute("aria-disabled") is None and token.get_attribute("disabled") is None:
                 invalid_tokens.append(token2)
                 # print(f"Two: {token2.text}")
                 time.sleep(.5) # Click slower
@@ -696,14 +687,10 @@ def complete_skill(possible_skip_to_lesson=False):
             except WebDriverException:
                 pass
 
-            try:
+            with contextlib.suppress(WebDriverException):
                 challenge = driver.find_element(By.XPATH,
                                                 '//div[@data-test="challenge challenge-gapFill"]')
                 challenge_gap()
-                # break
-            except WebDriverException:
-                pass
-
             try:
                 challenge = driver.find_element(By.XPATH,
                                                 '//div[@data-test="challenge challenge-match"]')
@@ -882,11 +869,11 @@ def main():
 
     global driver
 
-    service = ChromeService(executable_path=settings['chromedriver_path'])
+    service = EdgeService(executable_path=settings['chromedriver_path'])
 
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    driver = webdriver.Edge(service=service, options=chrome_options)
 
-    driver.get("https://duolingo.com")
+    driver.get("https://www.duolingo.com")
 
     try:
         have_account = WebDriverWait(driver, 10).until(

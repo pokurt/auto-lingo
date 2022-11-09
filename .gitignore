@@ -1,3 +1,5 @@
 credentials.json
 settings.json
 credentials.json
+venv/*
+credentials.json

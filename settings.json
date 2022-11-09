@@ -1,17 +1,17 @@
 {
-    "chromedriver_path": "C:\\Program Files (x86)\\chromedriver.exe",
+    "chromedriver_path": "C:\\Program Files\\msedgedriver.exe",
 
-    "antifarm_sleep": 0,
+    "antifarm_sleep": 10,
 
     "deviation": 0,
 
     "maximize_window": true,
 
-    "headless": false,
+    "headless": true,
 
     "incognito": true,
 
-    "auto_login": false,
+    "auto_login": true,
 
     "mute_audio": true
 }
